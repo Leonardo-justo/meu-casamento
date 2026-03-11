@@ -1,0 +1,158 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: wedding/info
+// Fields:
+//   - coupleNames: string (required)
+//   - weddingDate: string (required, date-time)
+//   - story: string
+//   - locationName: string
+//   - locationAddress: string
+//   - locationMapUrl: string
+//   - dressCode: string
+//   - homeImageUrl: string
+//
+// Collection: guests
+// Fields:
+//   - fullName: string (required)
+//   - email: string (required, email)
+//   - phone: string
+//   - adults: int (required)
+//   - children: int (required)
+//   - dietaryRestrictions: string
+//   - message: string
+//   - confirmedAt: string (date-time)
+//
+// Collection: gifts
+// Fields:
+//   - name: string (required)
+//   - description: string
+//   - price: number (required)
+//   - imageUrl: string
+//   - totalQuantity: int (required)
+//   - availableQuantity: int (required)
+//
+// Collection: orders
+// Fields:
+//   - giftId: string (required)
+//   - giftName: string
+//   - guestName: string
+//   - guestEmail: string (required, email)
+//   - quantity: int (required)
+//   - totalAmount: number (required)
+//   - status: string (required, enum: ['pending', 'paid', 'failed'])
+//   - createdAt: string (date-time)
+//
+// Collection: gallery
+// Fields:
+//   - url: string (required)
+//   - caption: string
+//   - order: int
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "Leonardo2justo@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidWeddingInfo(data) {
+      return data.keys().hasAll(['coupleNames', 'weddingDate']) &&
+             data.coupleNames is string && data.coupleNames.size() < 200 &&
+             data.weddingDate is string;
+    }
+
+    function isValidGuest(data) {
+      return data.keys().hasAll(['fullName', 'email', 'adults', 'children']) &&
+             data.fullName is string && data.fullName.size() < 200 &&
+             isValidEmail(data.email) &&
+             data.adults is int && data.adults >= 0 &&
+             data.children is int && data.children >= 0;
+    }
+
+    function isValidGift(data) {
+      return data.keys().hasAll(['name', 'price', 'totalQuantity', 'availableQuantity']) &&
+             data.name is string && data.name.size() < 200 &&
+             data.price is number && data.price >= 0 &&
+             data.totalQuantity is int && data.totalQuantity >= 0 &&
+             data.availableQuantity is int && data.availableQuantity >= 0;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['giftId', 'guestEmail', 'quantity', 'totalAmount', 'status']) &&
+             data.giftId is string &&
+             isValidEmail(data.guestEmail) &&
+             data.quantity is int && data.quantity > 0 &&
+             data.totalAmount is number && data.totalAmount >= 0 &&
+             data.status in ['pending', 'paid', 'failed'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /wedding/info {
+      allow read: if true;
+      allow write: if isAdmin() && isValidWeddingInfo(request.resource.data);
+    }
+
+    match /guests/{guestId} {
+      allow read: if isAdmin();
+      allow create: if isValidGuest(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /gifts/{giftId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidGift(request.resource.data);
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAdmin();
+      // Orders are created by the backend (server.ts) using Admin SDK, 
+      // but we can allow read for admin in rules.
+      // If the client needs to create orders directly (not recommended), we'd add rules here.
+      allow write: if isAdmin(); 
+    }
+
+    match /gallery/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "WeddingInfo": {
+      "title": "Wedding Information",
+      "description": "General information about the wedding and the couple.",
+      "type": "object",
+      "properties": {
+        "coupleNames": { "type": "string", "description": "Names of the couple." },
+        "weddingDate": { "type": "string", "format": "date-time", "description": "Date and time of the wedding." },
+        "story": { "type": "string", "description": "The story of the couple." },
+        "locationName": { "type": "string", "description": "Name of the venue." },
+        "locationAddress": { "type": "string", "description": "Address of the venue." },
+        "locationMapUrl": { "type": "string", "description": "Google Maps embed URL." },
+        "dressCode": { "type": "string", "description": "Dress code for the event." },
+        "homeImageUrl": { "type": "string", "description": "Main image for the home page." }
+      },
+      "required": ["coupleNames", "weddingDate"]
+    },
+    "Guest": {
+      "title": "Guest RSVP",
+      "description": "Information provided by guests during RSVP.",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "adults": { "type": "integer" },
+        "children": { "type": "integer" },
+        "dietaryRestrictions": { "type": "string" },
+        "message": { "type": "string" },
+        "confirmedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fullName", "email", "adults", "children"]
+    },
+    "Gift": {
+      "title": "Gift Item",
+      "description": "An item in the wedding gift list.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "totalQuantity": { "type": "integer" },
+        "availableQuantity": { "type": "integer" }
+      },
+      "required": ["name", "price", "totalQuantity", "availableQuantity"]
+    },
+    "Order": {
+      "title": "Gift Order",
+      "description": "A purchase made by a guest.",
+      "type": "object",
+      "properties": {
+        "giftId": { "type": "string" },
+        "giftName": { "type": "string" },
+        "guestName": { "type": "string" },
+        "guestEmail": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid", "failed"] },
+        "infinitePayId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["giftId", "guestEmail", "quantity", "totalAmount", "status"]
+    },
+    "GalleryImage": {
+      "title": "Gallery Image",
+      "description": "An image in the wedding gallery.",
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "caption": { "type": "string" },
+        "order": { "type": "integer" }
+      },
+      "required": ["url"]
+    },
+    "AdminConfig": {
+      "title": "Admin Configuration",
+      "description": "Sensitive configuration for the admin panel.",
+      "type": "object",
+      "properties": {
+        "infinitePayApiKey": { "type": "string" },
+        "infinitePayToken": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "wedding/info": {
+      "schema": "WeddingInfo",
+      "description": "Single document containing wedding details."
+    },
+    "guests": {
+      "schema": "Guest",
+      "description": "Collection of guest RSVPs."
+    },
+    "gifts": {
+      "schema": "Gift",
+      "description": "Collection of gift items."
+    },
+    "orders": {
+      "schema": "Order",
+      "description": "Collection of gift purchase orders."
+    },
+    "gallery": {
+      "schema": "GalleryImage",
+      "description": "Collection of gallery images."
+    },
+    "config/admin": {
+      "schema": "AdminConfig",
+      "description": "Admin-only configuration document."
+    }
+  }
+}

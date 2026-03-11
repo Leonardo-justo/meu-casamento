@@ -85,7 +85,8 @@ service cloud.firestore {
     function isValidWeddingInfo(data) {
       return data.keys().hasAll(['coupleNames', 'weddingDate']) &&
              data.coupleNames is string && data.coupleNames.size() < 200 &&
-             data.weddingDate is string;
+             data.weddingDate is string &&
+             isValidDateString(data.weddingDate);
     }
 
     function isValidGuest(data) {
@@ -93,15 +94,22 @@ service cloud.firestore {
              data.fullName is string && data.fullName.size() < 200 &&
              isValidEmail(data.email) &&
              data.adults is int && data.adults >= 0 &&
-             data.children is int && data.children >= 0;
+             data.children is int && data.children >= 0 &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() < 40)) &&
+             (!('dietaryRestrictions' in data) || (data.dietaryRestrictions is string && data.dietaryRestrictions.size() < 300)) &&
+             (!('message' in data) || (data.message is string && data.message.size() < 1000)) &&
+             (!('confirmedAt' in data) || isValidDateString(data.confirmedAt));
     }
 
     function isValidGift(data) {
       return data.keys().hasAll(['name', 'price', 'totalQuantity', 'availableQuantity']) &&
              data.name is string && data.name.size() < 200 &&
+             (!('description' in data) || (data.description is string && data.description.size() < 1000)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 2000)) &&
              data.price is number && data.price >= 0 &&
              data.totalQuantity is int && data.totalQuantity >= 0 &&
-             data.availableQuantity is int && data.availableQuantity >= 0;
+             data.availableQuantity is int && data.availableQuantity >= 0 &&
+             data.availableQuantity <= data.totalQuantity;
     }
 
     function isValidOrder(data) {
@@ -110,7 +118,14 @@ service cloud.firestore {
              isValidEmail(data.guestEmail) &&
              data.quantity is int && data.quantity > 0 &&
              data.totalAmount is number && data.totalAmount >= 0 &&
-             data.status in ['pending', 'paid', 'failed'];
+             data.status in ['pending', 'paid', 'failed', 'cancelled'];
+    }
+
+    function isValidGalleryItem(data) {
+      return data.keys().hasAll(['url']) &&
+             data.url is string && data.url.size() < 2000 &&
+             (!('caption' in data) || (data.caption is string && data.caption.size() < 300)) &&
+             (!('order' in data) || (data.order is int && data.order >= 0));
     }
 
     // ===============================================================
@@ -130,20 +145,20 @@ service cloud.firestore {
 
     match /gifts/{giftId} {
       allow read: if true;
-      allow write: if isAdmin() && isValidGift(request.resource.data);
+      allow create, update: if isAdmin() && isValidGift(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     match /orders/{orderId} {
       allow read: if isAdmin();
-      // Orders are created by the backend (server.ts) using Admin SDK, 
-      // but we can allow read for admin in rules.
-      // If the client needs to create orders directly (not recommended), we'd add rules here.
-      allow write: if isAdmin(); 
+      // Orders are created and updated only by backend Admin SDK.
+      allow write: if false; 
     }
 
     match /gallery/{imageId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin() && isValidGalleryItem(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     match /users/{userId} {

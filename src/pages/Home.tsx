@@ -20,7 +20,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const defaultDate = '2026-11-07T18:00:00';
+    const defaultDate = '2026-11-07T18:00:00-03:00';
     const targetDate = weddingInfo?.weddingDate || defaultDate;
     const target = new Date(targetDate).getTime();
 

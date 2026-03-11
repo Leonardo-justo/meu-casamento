@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { Gift as GiftIcon, ShoppingCart, X, CreditCard, CheckCircle } from 'lucide-react';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { ShoppingCart, X, CreditCard, CheckCircle } from 'lucide-react';
 
 export default function Gifts() {
   const [gifts, setGifts] = useState<any[]>([]);
@@ -10,21 +10,62 @@ export default function Gifts() {
   const [quantity, setQuantity] = useState(1);
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '' });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'gifts'), (snapshot) => {
-      const giftsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setGifts(giftsList);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'gifts');
-    });
+    const unsubscribe = onSnapshot(
+      collection(db, 'gifts'),
+      (snapshot) => {
+        const giftsList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setGifts(giftsList);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'gifts');
+      }
+    );
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!paymentUrl) return;
+
+    setRedirectCountdown(2);
+    const intervalId = setInterval(() => {
+      setRedirectCountdown((prev) => (prev && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    const timeoutId = setTimeout(() => {
+      window.location.assign(paymentUrl);
+    }, 2200);
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
+  }, [paymentUrl]);
+
   const handleBuy = async () => {
+    setErrorMessage(null);
+
     if (!guestInfo.name || !guestInfo.email) {
-      alert('Por favor, preencha seu nome e e-mail.');
+      setErrorMessage('Por favor, preencha seu nome e e-mail.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email)) {
+      setErrorMessage('Informe um e-mail válido.');
+      return;
+    }
+    if (!selectedGift) {
+      setErrorMessage('Selecione um presente para continuar.');
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      setErrorMessage('Quantidade inválida.');
+      return;
+    }
+    if (quantity > selectedGift.availableQuantity) {
+      setErrorMessage('Quantidade maior que o disponível.');
       return;
     }
 
@@ -36,19 +77,27 @@ export default function Gifts() {
         body: JSON.stringify({
           giftId: selectedGift.id,
           quantity,
-          guestName: guestInfo.name,
-          guestEmail: guestInfo.email,
+          guestName: guestInfo.name.trim(),
+          guestEmail: guestInfo.email.trim(),
         }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Erro ao criar pagamento.');
+      }
 
       const data = await response.json();
       if (data.paymentUrl) {
         setPaymentUrl(data.paymentUrl);
-        // In a real app, you might redirect: window.location.href = data.paymentUrl;
+      } else if (data.orderId) {
+        window.location.assign(`/payment/${data.orderId}?result=pending`);
+      } else {
+        setErrorMessage('Pedido criado, mas não foi possível obter o link de pagamento.');
       }
     } catch (error) {
       console.error('Error creating payment:', error);
-      alert('Erro ao processar pagamento. Tente novamente.');
+      setErrorMessage(error instanceof Error ? error.message : 'Erro ao processar pagamento. Tente novamente.');
     } finally {
       setIsProcessing(false);
     }
@@ -56,15 +105,11 @@ export default function Gifts() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-20">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-16"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
         <h1 className="text-5xl font-serif text-stone-800 mb-4">Lista de Presentes</h1>
         <p className="text-stone-500 max-w-2xl mx-auto font-light">
-          Sua presença é o nosso maior presente, mas se você desejar nos presentear, 
-          escolhemos algumas sugestões para nos ajudar a começar nossa vida juntos.
+          Sua presença é o nosso maior presente, mas se você desejar nos presentear, escolhemos algumas sugestões para
+          nos ajudar a começar nossa vida juntos.
         </p>
       </motion.div>
 
@@ -79,13 +124,16 @@ export default function Gifts() {
           >
             <div className="h-64 overflow-hidden relative">
               <img
-                src={gift.imageUrl || "https://images.unsplash.com/photo-1513151233558-d860c5398176?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"}
+                src={
+                  gift.imageUrl ||
+                  'https://images.unsplash.com/photo-1513151233558-d860c5398176?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+                }
                 alt={gift.name}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 referrerPolicy="no-referrer"
               />
               <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-1 rounded-full text-stone-800 font-serif font-bold">
-                R$ {gift.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {Number(gift.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </div>
             <div className="p-8">
@@ -110,7 +158,6 @@ export default function Gifts() {
         ))}
       </div>
 
-      {/* Purchase Modal */}
       <AnimatePresence>
         {selectedGift && (
           <motion.div
@@ -127,7 +174,16 @@ export default function Gifts() {
             >
               <div className="p-6 border-b border-stone-100 flex justify-between items-center">
                 <h3 className="text-2xl font-serif text-stone-800">Presentear</h3>
-                <button onClick={() => { setSelectedGift(null); setPaymentUrl(null); }} className="text-stone-400 hover:text-stone-800">
+                <button
+                  onClick={() => {
+                    setSelectedGift(null);
+                    setPaymentUrl(null);
+                    setErrorMessage(null);
+                    setRedirectCountdown(null);
+                  }}
+                  type="button"
+                  className="text-stone-400 hover:text-stone-800"
+                >
                   <X size={24} />
                 </button>
               </div>
@@ -136,10 +192,17 @@ export default function Gifts() {
                 {!paymentUrl ? (
                   <div className="space-y-6">
                     <div className="flex items-center space-x-4">
-                      <img src={selectedGift.imageUrl} alt="" className="w-20 h-20 object-cover rounded-xl" />
+                      <img
+                        src={selectedGift.imageUrl}
+                        alt=""
+                        className="w-20 h-20 object-cover rounded-xl"
+                        referrerPolicy="no-referrer"
+                      />
                       <div>
                         <h4 className="font-serif text-xl text-stone-800">{selectedGift.name}</h4>
-                        <p className="text-stone-500">R$ {selectedGift.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-stone-500">
+                          R$ {Number(selectedGift.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
                       </div>
                     </div>
 
@@ -151,7 +214,7 @@ export default function Gifts() {
                           value={guestInfo.name}
                           onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
                           className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
-                          placeholder="Nome Completo"
+                          placeholder="Nome completo"
                         />
                       </div>
                       <div className="space-y-2">
@@ -171,16 +234,28 @@ export default function Gifts() {
                           min="1"
                           max={selectedGift.availableQuantity}
                           value={quantity}
-                          onChange={(e) => setQuantity(parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const parsed = Number.parseInt(e.target.value, 10);
+                            setQuantity(Number.isNaN(parsed) ? 1 : parsed);
+                          }}
                           className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
                         />
                       </div>
                     </div>
 
+                    {errorMessage && (
+                      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        {errorMessage}
+                      </div>
+                    )}
+
                     <div className="pt-4 border-t border-stone-100 flex justify-between items-center">
                       <span className="text-stone-500">Total:</span>
                       <span className="text-2xl font-serif font-bold text-stone-800">
-                        R$ {(selectedGift.price * quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        R${' '}
+                        {(Number(selectedGift.price || 0) * quantity).toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                        })}
                       </span>
                     </div>
 
@@ -189,10 +264,12 @@ export default function Gifts() {
                       disabled={isProcessing}
                       className="w-full py-4 bg-stone-800 text-white uppercase tracking-widest text-sm font-bold rounded-xl hover:bg-stone-700 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
                     >
-                      {isProcessing ? 'Processando...' : (
+                      {isProcessing ? (
+                        'Processando...'
+                      ) : (
                         <>
                           <CreditCard size={18} />
-                          <span>Ir para Pagamento</span>
+                          <span>Ir para pagamento</span>
                         </>
                       )}
                     </button>
@@ -200,18 +277,19 @@ export default function Gifts() {
                 ) : (
                   <div className="text-center py-8 space-y-6">
                     <CheckCircle className="mx-auto text-emerald-400" size={64} />
-                    <h4 className="text-2xl font-serif text-stone-800">Pedido Criado!</h4>
-                    <p className="text-stone-600">
-                      Clique no botão abaixo para concluir o pagamento via Infinite Pay.
-                    </p>
+                    <h4 className="text-2xl font-serif text-stone-800">Pedido criado!</h4>
+                    <p className="text-stone-600">Você será redirecionado automaticamente para finalizar o pagamento.</p>
                     <a
                       href={paymentUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block w-full py-4 bg-emerald-500 text-white uppercase tracking-widest text-sm font-bold rounded-xl hover:bg-emerald-600 transition-colors"
                     >
-                      Pagar Agora
+                      Pagar agora
                     </a>
+                    {redirectCountdown !== null && (
+                      <p className="text-xs text-stone-400">Redirecionando em {redirectCountdown}s...</p>
+                    )}
                     <p className="text-xs text-stone-400">
                       Após o pagamento, o casal será notificado automaticamente.
                     </p>

@@ -30,8 +30,19 @@ export default function Info() {
     {
       icon: <MapPin className="text-rose-300" size={32} />,
       title: 'Local',
-      content: weddingInfo?.locationName || 'A definir',
-      subContent: weddingInfo?.locationAddress || '',
+      content: weddingInfo?.ceremonyLocationName || weddingInfo?.locationName || 'A definir',
+      subContent: weddingInfo?.ceremonyLocationAddress || weddingInfo?.locationAddress || '',
+    },
+    {
+      icon: <MapPin className="text-rose-300" size={32} />,
+      title: 'Recepção',
+      content: weddingInfo?.receptionLocationName || 'A definir',
+      subContent: weddingInfo?.receptionLocationAddress || '',
+    },
+    {
+      icon: <MapPin className="text-rose-300" size={32} />,
+      title: 'Cidade',
+      content: 'São José do Rio Preto - SP',
     },
     {
       icon: <Shirt className="text-rose-300" size={32} />,

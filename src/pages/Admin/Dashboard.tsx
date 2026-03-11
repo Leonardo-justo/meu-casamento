@@ -45,7 +45,7 @@ export default function Dashboard() {
         if (data.status === 'paid') {
           total += data.totalAmount;
           sold += data.quantity;
-        } else if (data.status === 'pending') {
+        } else if (data.status === 'pending' || data.status === 'awaiting_payment') {
           pending++;
         }
       });
@@ -110,6 +110,10 @@ export default function Dashboard() {
             <Link to="/admin/gifts" className="p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors text-center">
               <Gift className="mx-auto mb-2 text-stone-400" />
               <span className="text-sm font-medium text-stone-600">Gerenciar Presentes</span>
+            </Link>
+            <Link to="/admin/gallery" className="p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors text-center">
+              <ImageIcon className="mx-auto mb-2 text-stone-400" />
+              <span className="text-sm font-medium text-stone-600">Gerenciar Galeria</span>
             </Link>
             <Link to="/admin/rsvps" className="p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors text-center">
               <Users className="mx-auto mb-2 text-stone-400" />

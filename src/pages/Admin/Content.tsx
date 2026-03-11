@@ -14,6 +14,10 @@ export default function AdminContent() {
     story: '',
     locationName: '',
     locationAddress: '',
+    ceremonyLocationName: '',
+    ceremonyLocationAddress: '',
+    receptionLocationName: '',
+    receptionLocationAddress: '',
     locationMapUrl: '',
     dressCode: '',
     homeImageUrl: '',
@@ -130,6 +134,46 @@ export default function AdminContent() {
               value={formData.locationAddress}
               onChange={(e) => setFormData({ ...formData, locationAddress: e.target.value })}
               className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-widest text-stone-500 font-bold">Cerimônia (nome)</label>
+            <input
+              type="text"
+              value={formData.ceremonyLocationName || ''}
+              onChange={(e) => setFormData({ ...formData, ceremonyLocationName: e.target.value })}
+              className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
+              placeholder="Igreja Santa Terezinha do Menino Jesus"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-widest text-stone-500 font-bold">Cerimônia (endereço)</label>
+            <input
+              type="text"
+              value={formData.ceremonyLocationAddress || ''}
+              onChange={(e) => setFormData({ ...formData, ceremonyLocationAddress: e.target.value })}
+              className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
+              placeholder="São José do Rio Preto - SP"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-widest text-stone-500 font-bold">Festa (nome)</label>
+            <input
+              type="text"
+              value={formData.receptionLocationName || ''}
+              onChange={(e) => setFormData({ ...formData, receptionLocationName: e.target.value })}
+              className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
+              placeholder="Chácara VIVA 1"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-widest text-stone-500 font-bold">Festa (endereço)</label>
+            <input
+              type="text"
+              value={formData.receptionLocationAddress || ''}
+              onChange={(e) => setFormData({ ...formData, receptionLocationAddress: e.target.value })}
+              className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
+              placeholder="São José do Rio Preto - SP"
             />
           </div>
           <div className="space-y-2">

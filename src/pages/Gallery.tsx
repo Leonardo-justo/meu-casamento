@@ -7,15 +7,24 @@ import { X, Maximize2 } from 'lucide-react';
 export default function Gallery() {
   const [images, setImages] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const q = query(collection(db, 'gallery'), orderBy('order', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const imagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setImages(imagesList);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'gallery');
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const imagesList = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+        setImages(imagesList);
+        setLoading(false);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'gallery');
+        setLoading(false);
+      }
+    );
     return () => unsubscribe();
   }, []);
 
@@ -30,6 +39,14 @@ export default function Gallery() {
         <p className="text-stone-500 uppercase tracking-widest text-xs">Momentos especiais</p>
       </motion.div>
 
+      {loading && (
+        <div className="text-center py-10 text-stone-400 font-serif">Carregando fotos...</div>
+      )}
+
+      {!loading && images.length === 0 && (
+        <div className="text-center py-12 text-stone-400 font-serif">Em breve mais momentos especiais por aqui.</div>
+      )}
+
       <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
         {images.map((image, index) => (
           <motion.div
@@ -43,6 +60,11 @@ export default function Gallery() {
             <img
               src={image.url}
               alt={image.caption || 'Wedding Gallery'}
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.src =
+                  'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1400&q=80';
+              }}
               className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
               referrerPolicy="no-referrer"
             />

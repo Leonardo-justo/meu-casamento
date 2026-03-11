@@ -14,11 +14,13 @@ import Info from './pages/Info';
 import RSVP from './pages/RSVP';
 import Gifts from './pages/Gifts';
 import Gallery from './pages/Gallery';
+import PaymentStatusPage from './pages/PaymentStatus';
 import Login from './pages/Admin/Login';
 import Dashboard from './pages/Admin/Dashboard';
 import AdminContent from './pages/Admin/Content';
 import AdminGifts from './pages/Admin/Gifts';
 import AdminRSVPs from './pages/Admin/RSVPs';
+import AdminGallery from './pages/Admin/Gallery';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,6 +49,7 @@ const Navbar = () => {
     { name: 'Dashboard', path: '/admin' },
     { name: 'Conteúdo', path: '/admin/content' },
     { name: 'Presentes', path: '/admin/gifts' },
+    { name: 'Galeria', path: '/admin/gallery' },
     { name: 'RSVPs', path: '/admin/rsvps' },
   ];
 
@@ -166,12 +169,14 @@ export default function App() {
               <Route path="/rsvp" element={<RSVP />} />
               <Route path="/gifts" element={<Gifts />} />
               <Route path="/gallery" element={<Gallery />} />
+              <Route path="/payment/:orderId" element={<PaymentStatusPage />} />
               
               {/* Admin Routes */}
               <Route path="/admin/login" element={<Login />} />
               <Route path="/admin" element={<Dashboard />} />
               <Route path="/admin/content" element={<AdminContent />} />
               <Route path="/admin/gifts" element={<AdminGifts />} />
+              <Route path="/admin/gallery" element={<AdminGallery />} />
               <Route path="/admin/rsvps" element={<AdminRSVPs />} />
             </Routes>
           </main>

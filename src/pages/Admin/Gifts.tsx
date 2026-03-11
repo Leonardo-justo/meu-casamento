@@ -40,10 +40,33 @@ export default function AdminGifts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const sanitizedPayload = {
+        ...formData,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        imageUrl: formData.imageUrl.trim(),
+        price: Number.isFinite(formData.price) ? Number(formData.price) : 0,
+        totalQuantity: Math.max(0, Math.floor(Number(formData.totalQuantity) || 0)),
+        availableQuantity: Math.max(0, Math.floor(Number(formData.availableQuantity) || 0)),
+      };
+
+      if (!sanitizedPayload.name) {
+        alert('Informe o nome do presente.');
+        return;
+      }
+      if (sanitizedPayload.availableQuantity > sanitizedPayload.totalQuantity) {
+        alert('Quantidade disponível não pode ser maior que a quantidade total.');
+        return;
+      }
+      if (sanitizedPayload.price <= 0) {
+        alert('O preço deve ser maior que zero.');
+        return;
+      }
+
       if (editingGift) {
-        await updateDoc(doc(db, 'gifts', editingGift.id), formData);
+        await updateDoc(doc(db, 'gifts', editingGift.id), sanitizedPayload);
       } else {
-        await addDoc(collection(db, 'gifts'), formData);
+        await addDoc(collection(db, 'gifts'), sanitizedPayload);
       }
       setIsModalOpen(false);
       setEditingGift(null);
@@ -157,7 +180,10 @@ export default function AdminGifts() {
                       type="number"
                       step="0.01"
                       value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                      onChange={(e) => {
+                        const value = Number.parseFloat(e.target.value);
+                        setFormData({ ...formData, price: Number.isNaN(value) ? 0 : value });
+                      }}
                       className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
                     />
                   </div>
@@ -189,7 +215,10 @@ export default function AdminGifts() {
                       required
                       type="number"
                       value={formData.totalQuantity}
-                      onChange={(e) => setFormData({ ...formData, totalQuantity: parseInt(e.target.value) })}
+                      onChange={(e) => {
+                        const value = Number.parseInt(e.target.value, 10);
+                        setFormData({ ...formData, totalQuantity: Number.isNaN(value) ? 0 : value });
+                      }}
                       className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
                     />
                   </div>
@@ -199,7 +228,10 @@ export default function AdminGifts() {
                       required
                       type="number"
                       value={formData.availableQuantity}
-                      onChange={(e) => setFormData({ ...formData, availableQuantity: parseInt(e.target.value) })}
+                      onChange={(e) => {
+                        const value = Number.parseInt(e.target.value, 10);
+                        setFormData({ ...formData, availableQuantity: Number.isNaN(value) ? 0 : value });
+                      }}
                       className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
                     />
                   </div>

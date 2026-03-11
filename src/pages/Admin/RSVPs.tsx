@@ -10,6 +10,7 @@ export default function AdminRSVPs() {
   const [user, setUser] = useState<any>(null);
   const [guests, setGuests] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [messageFilter, setMessageFilter] = useState<'all' | 'with' | 'without'>('all');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,10 +30,22 @@ export default function AdminRSVPs() {
     };
   }, [navigate]);
 
-  const filteredGuests = guests.filter(guest => 
-    guest.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    guest.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredGuests = guests.filter((guest) => {
+    const fullName = (guest.fullName || '').toLowerCase();
+    const email = (guest.email || '').toLowerCase();
+    const hasMessage = Boolean((guest.message || '').trim());
+
+    const matchSearch = fullName.includes(searchTerm.toLowerCase()) || email.includes(searchTerm.toLowerCase());
+    if (!matchSearch) return false;
+    if (messageFilter === 'with') return hasMessage;
+    if (messageFilter === 'without') return !hasMessage;
+    return true;
+  });
+
+  const escapeCsv = (value: unknown) => {
+    const text = String(value ?? '');
+    return `"${text.replace(/"/g, '""')}"`;
+  };
 
   const exportToCSV = () => {
     const headers = ['Nome', 'Email', 'Telefone', 'Adultos', 'Crianças', 'Restrições', 'Mensagem', 'Data'];
@@ -47,7 +60,9 @@ export default function AdminRSVPs() {
       new Date(g.confirmedAt).toLocaleString('pt-BR')
     ]);
 
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const csvContent = [headers, ...rows]
+      .map((line) => line.map((value) => escapeCsv(value)).join(','))
+      .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -66,9 +81,11 @@ export default function AdminRSVPs() {
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h1 className="text-4xl font-serif text-stone-800">Confirmações de Presença</h1>
-          <p className="text-stone-500 mt-2">Total de {guests.length} confirmações recebidas.</p>
+          <p className="text-stone-500 mt-2">
+            Total de {guests.length} confirmações recebidas ({filteredGuests.length} exibidas).
+          </p>
         </div>
-        <div className="flex w-full md:w-auto gap-4">
+        <div className="flex w-full md:w-auto gap-4 flex-wrap">
           <div className="relative flex-grow md:w-64">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
             <input
@@ -79,6 +96,15 @@ export default function AdminRSVPs() {
               className="w-full pl-12 pr-4 py-3 bg-white border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200 shadow-sm"
             />
           </div>
+          <select
+            value={messageFilter}
+            onChange={(e) => setMessageFilter(e.target.value as 'all' | 'with' | 'without')}
+            className="px-4 py-3 bg-white border border-stone-100 rounded-xl text-sm text-stone-600 focus:outline-none focus:border-rose-200 shadow-sm"
+          >
+            <option value="all">Todas mensagens</option>
+            <option value="with">Com mensagem</option>
+            <option value="without">Sem mensagem</option>
+          </select>
           <button
             onClick={exportToCSV}
             className="px-6 py-3 bg-white border border-stone-100 text-stone-600 uppercase tracking-widest text-xs font-bold rounded-xl hover:bg-stone-50 transition-colors flex items-center gap-2 shadow-sm"
@@ -129,13 +155,14 @@ export default function AdminRSVPs() {
                       )}
                     </div>
                   </td>
-                  <td className="px-8 py-6">
+                  <td className="px-8 py-6 align-top">
                     {guest.message ? (
-                      <div className="group relative">
-                        <MessageSquare size={18} className="text-stone-300 cursor-help" />
-                        <div className="absolute bottom-full left-0 mb-2 w-48 p-3 bg-stone-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                          {guest.message}
+                      <div className="max-w-xs">
+                        <div className="flex items-center gap-2 text-stone-500 mb-1">
+                          <MessageSquare size={16} className="text-stone-300" />
+                          <span className="text-xs uppercase tracking-wide">Mensagem</span>
                         </div>
+                        <p className="text-sm text-stone-600 line-clamp-3 whitespace-pre-wrap">{guest.message}</p>
                       </div>
                     ) : (
                       <span className="text-stone-200">-</span>

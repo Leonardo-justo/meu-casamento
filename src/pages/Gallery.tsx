@@ -14,9 +14,9 @@ export default function Gallery() {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const imagesList = snapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+        const imagesList: any[] = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...(doc.data() as Record<string, unknown>) }))
+          .sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0));
         setImages(imagesList);
         setLoading(false);
       },

@@ -14,13 +14,13 @@ import Info from './pages/Info';
 import RSVP from './pages/RSVP';
 import Gifts from './pages/Gifts';
 import Gallery from './pages/Gallery';
-import PaymentStatusPage from './pages/PaymentStatus';
+import PaymentStatusPage from './pages/PaymentStatus.tsx';
 import Login from './pages/Admin/Login';
 import Dashboard from './pages/Admin/Dashboard';
 import AdminContent from './pages/Admin/Content';
 import AdminGifts from './pages/Admin/Gifts';
 import AdminRSVPs from './pages/Admin/RSVPs';
-import AdminGallery from './pages/Admin/Gallery';
+import AdminGallery from './pages/Admin/Gallery.tsx';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);

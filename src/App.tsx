@@ -1,4 +1,4 @@
-import { BrowserRouter, HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Heart, Menu, X, Calendar, MapPin, Gift, Image as ImageIcon, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -29,6 +29,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -40,15 +41,15 @@ const Navbar = () => {
   const isAdminPath = location.pathname.startsWith('/admin');
 
   const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'Nossa História', path: '/story' },
-    { name: 'Cerimônia', path: '/info' },
-    { name: 'Trajes', path: '/dress-code' },
-    { name: 'RSVP', path: '/rsvp' },
-    { name: 'Lista de Presentes', path: '/gifts' },
-    { name: 'Recados', path: '/messages' },
-    { name: 'Galeria', path: '/gallery' },
-    { name: 'Até Breve', path: '/ate-breve' },
+    { name: 'Início', sectionId: 'inicio' },
+    { name: 'História', sectionId: 'historia' },
+    { name: 'Cerimônia', sectionId: 'cerimonia' },
+    { name: 'Trajes', sectionId: 'trajes' },
+    { name: 'Presentes', sectionId: 'presentes' },
+    { name: 'Recados', sectionId: 'recados' },
+    { name: 'Galeria', sectionId: 'galeria' },
+    { name: 'RSVP', sectionId: 'rsvp' },
+    { name: 'Até Breve', sectionId: 'ate-breve' },
   ];
 
   const adminLinks = [
@@ -61,6 +62,23 @@ const Navbar = () => {
 
   const links = isAdminPath && user ? adminLinks : navLinks;
 
+  const scrollToSection = (sectionId: string) => {
+    const performScroll = () => {
+      const target = document.getElementById(sectionId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    if (location.pathname !== '/') {
+      navigate('/');
+      window.setTimeout(performScroll, 120);
+    } else {
+      performScroll();
+    }
+    setIsOpen(false);
+  };
+
   return (
     <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-stone-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -72,17 +90,27 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex space-x-8 items-center">
-            {links.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`text-sm font-medium tracking-widest uppercase transition-colors hover:text-rose-400 ${
-                  location.pathname === link.path ? 'text-rose-500' : 'text-stone-600'
-                }`}
-              >
-                {link.name}
-              </Link>
-            ))}
+            {isAdminPath && user
+              ? (links as Array<{ name: string; path: string }>).map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`text-sm font-medium tracking-widest uppercase transition-colors hover:text-rose-400 ${
+                      location.pathname === link.path ? 'text-rose-500' : 'text-stone-600'
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                ))
+              : (links as Array<{ name: string; sectionId: string }>).map((link) => (
+                  <button
+                    key={link.sectionId}
+                    onClick={() => scrollToSection(link.sectionId)}
+                    className="text-sm font-medium tracking-widest uppercase transition-colors hover:text-rose-400 text-stone-600"
+                  >
+                    {link.name}
+                  </button>
+                ))}
             {user && isAdminPath && (
               <button
                 onClick={() => signOut(auth)}
@@ -116,17 +144,27 @@ const Navbar = () => {
             exit={{ opacity: 0, y: -20 }}
             className="md:hidden bg-white border-b border-stone-100"
           >
-            <div className="px-4 pt-2 pb-6 space-y-4">
-              {links.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setIsOpen(false)}
-                  className="block text-lg font-serif text-stone-700 hover:text-rose-400"
-                >
-                  {link.name}
-                </Link>
-              ))}
+            <div className="px-4 pt-2 pb-6 space-y-3 max-h-[70vh] overflow-auto">
+              {isAdminPath && user
+                ? (links as Array<{ name: string; path: string }>).map((link) => (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      onClick={() => setIsOpen(false)}
+                      className="block text-lg font-serif text-stone-700 hover:text-rose-400"
+                    >
+                      {link.name}
+                    </Link>
+                  ))
+                : (links as Array<{ name: string; sectionId: string }>).map((link) => (
+                    <button
+                      key={link.sectionId}
+                      onClick={() => scrollToSection(link.sectionId)}
+                      className="block w-full text-left text-lg font-serif text-stone-700 hover:text-rose-400"
+                    >
+                      {link.name}
+                    </button>
+                  ))}
               {user && isAdminPath && (
                 <button
                   onClick={() => {

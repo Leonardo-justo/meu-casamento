@@ -3,20 +3,31 @@ import { motion } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { Heart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import Story from './Story';
+import Info from './Info';
+import DressCode from './DressCode';
+import Gifts from './Gifts';
+import Messages from './Messages';
+import Gallery from './Gallery';
+import RSVP from './RSVP';
+import Farewell from './Farewell';
 
 export default function Home() {
   const [weddingInfo, setWeddingInfo] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, 'wedding', 'info'), (doc) => {
-      if (doc.exists()) {
-        setWeddingInfo(doc.data());
+    const unsubscribe = onSnapshot(
+      doc(db, 'wedding', 'info'),
+      (entry) => {
+        if (entry.exists()) {
+          setWeddingInfo(entry.data());
+        }
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'wedding/info');
       }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'wedding/info');
-    });
+    );
     return () => unsubscribe();
   }, []);
 
@@ -42,24 +53,25 @@ export default function Home() {
       });
     };
 
-    updateTimer(); // Run once immediately
+    updateTimer();
     const interval = setInterval(updateTimer, 1000);
-
     return () => clearInterval(interval);
   }, [weddingInfo]);
 
   return (
     <div className="relative">
-      {/* Hero Section */}
-      <section className="h-[90vh] relative flex items-center justify-center overflow-hidden">
+      <section id="inicio" className="scroll-mt-28 h-[90vh] relative flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src={weddingInfo?.homeImageUrl || "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"}
+            src={
+              weddingInfo?.homeImageUrl ||
+              'https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80'
+            }
             alt="Wedding Background"
             className="w-full h-full object-cover opacity-60"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#fdfaf6]"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#fdfaf6]" />
         </div>
 
         <motion.div
@@ -69,18 +81,23 @@ export default function Home() {
           className="z-10 text-center px-4"
         >
           <span className="text-stone-500 uppercase tracking-[0.3em] text-sm mb-4 block">Save the Date</span>
-          <h1 className="text-6xl md:text-8xl font-serif text-stone-800 mb-6">
-            {weddingInfo?.coupleNames || "Bruna e Leonardo"}
+          <h1 className="text-5xl md:text-8xl font-serif text-stone-800 mb-6">
+            {weddingInfo?.coupleNames || 'Bruna e Leonardo'}
           </h1>
           <div className="flex items-center justify-center space-x-4 text-stone-600 mb-8">
-            <div className="h-px w-12 bg-stone-300"></div>
+            <div className="h-px w-12 bg-stone-300" />
             <span className="text-xl font-serif italic">
-              {weddingInfo?.weddingDate ? new Date(weddingInfo.weddingDate).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }) : "07 de novembro de 2026"}
+              {weddingInfo?.weddingDate
+                ? new Date(weddingInfo.weddingDate).toLocaleDateString('pt-BR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })
+                : '07 de novembro de 2026'}
             </span>
-            <div className="h-px w-12 bg-stone-300"></div>
+            <div className="h-px w-12 bg-stone-300" />
           </div>
-          
-          {/* Countdown */}
+
           <div className="grid grid-cols-4 gap-4 max-w-md mx-auto">
             {[
               { label: 'Dias', value: timeLeft.days },
@@ -97,77 +114,40 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Welcome Section */}
-      <section className="py-24 px-4 max-w-4xl mx-auto text-center">
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="space-y-8"
-        >
+      <section className="py-16 px-4 max-w-4xl mx-auto text-center">
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="space-y-8">
           <Heart className="mx-auto text-rose-200 fill-rose-200" size={32} />
           <h2 className="text-4xl font-serif text-stone-800">Sejam bem-vindos!</h2>
           <p className="text-stone-600 leading-relaxed text-lg font-light">
             Com o coracao cheio de gratidao, criamos este espacinho para compartilhar cada detalhe do nosso grande dia.
-            Aqui voce encontra informacoes da cerimonia e recepcao, confirma sua presenca, deixa seu recado e acompanha
-            nossa lista de presentes.
+            Role a pagina para ver tudo e use o menu para ir direto ao que voce procura.
           </p>
-          <div className="pt-8 flex gap-3 justify-center flex-wrap">
-            <Link
-              to="/rsvp"
-              className="px-8 py-3 border border-stone-800 text-stone-800 uppercase tracking-widest text-xs hover:bg-stone-800 hover:text-white transition-all"
-            >
-              Confirmar Presença
-            </Link>
-            <Link
-              to="/messages"
-              className="px-8 py-3 border border-rose-300 text-rose-500 uppercase tracking-widest text-xs hover:bg-rose-50 transition-all"
-            >
-              Enviar Recado
-            </Link>
-          </div>
         </motion.div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 pb-24">
-        <div className="text-center mb-8">
-          <p className="uppercase tracking-[0.25em] text-xs text-stone-400">Nosso convite</p>
-          <h3 className="text-4xl font-serif text-stone-800 mt-3">Tudo em um so lugar</h3>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {[
-            {
-              title: 'Cerimônia',
-              desc: weddingInfo?.ceremonyLocationName || weddingInfo?.locationName || 'Igreja',
-              sub: weddingInfo?.ceremonyLocationAddress || weddingInfo?.locationAddress || 'São José do Rio Preto - SP',
-              link: '/info',
-              cta: 'Ver detalhes',
-            },
-            {
-              title: 'Lista de Presentes',
-              desc: 'Escolha um presente com carinho para nos ajudar a comecar esse novo capitulo.',
-              sub: 'Opcao pratica e segura para presentear',
-              link: '/gifts',
-              cta: 'Presentear',
-            },
-            {
-              title: 'Recados',
-              desc: 'Deixe uma mensagem para guardar esse momento para sempre.',
-              sub: 'Mural de mensagens dos convidados',
-              link: '/messages',
-              cta: 'Enviar recado',
-            },
-          ].map((item) => (
-            <div key={item.title} className="bg-white border border-stone-100 rounded-3xl p-7 shadow-sm">
-              <h3 className="text-2xl font-serif text-stone-800">{item.title}</h3>
-              <p className="text-stone-600 mt-2">{item.desc}</p>
-              <p className="text-xs text-stone-400 mt-2">{item.sub}</p>
-              <Link to={item.link} className="inline-block mt-5 text-sm uppercase tracking-widest text-rose-500 hover:text-rose-600">
-                {item.cta}
-              </Link>
-            </div>
-          ))}
-        </div>
+      <section id="historia" className="scroll-mt-28">
+        <Story />
+      </section>
+      <section id="cerimonia" className="scroll-mt-28">
+        <Info />
+      </section>
+      <section id="trajes" className="scroll-mt-28">
+        <DressCode />
+      </section>
+      <section id="presentes" className="scroll-mt-28">
+        <Gifts />
+      </section>
+      <section id="recados" className="scroll-mt-28">
+        <Messages />
+      </section>
+      <section id="galeria" className="scroll-mt-28">
+        <Gallery />
+      </section>
+      <section id="rsvp" className="scroll-mt-28">
+        <RSVP />
+      </section>
+      <section id="ate-breve" className="scroll-mt-28">
+        <Farewell />
       </section>
     </div>
   );

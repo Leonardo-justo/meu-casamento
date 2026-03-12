@@ -32,10 +32,22 @@ const db = firebaseConfig.firestoreDatabaseId
 type NormalizedOrderStatus = 'pending' | 'paid' | 'failed' | 'cancelled';
 
 interface CreatePaymentBody {
-  giftId: string;
-  quantity: number;
+  giftId?: string;
+  quantity?: number;
   guestEmail: string;
   guestName: string;
+  cartItems?: Array<{
+    giftId: string;
+    name?: string;
+    unitPrice?: number;
+    quantity: number;
+  }>;
+  printedCard?: {
+    enabled?: boolean;
+    signerName?: string;
+    message?: string;
+    fee?: number;
+  };
 }
 
 interface PaymentCreateResult {
@@ -197,44 +209,100 @@ async function startServer() {
   );
 
   app.post('/api/payments/create', async (req, res) => {
-    const { giftId, quantity, guestEmail, guestName } = (req.body || {}) as CreatePaymentBody;
+    const payload = (req.body || {}) as CreatePaymentBody;
+    const { giftId, quantity, guestEmail, guestName, cartItems = [], printedCard } = payload;
 
     try {
-      if (!isNonEmptyString(giftId)) {
-        return res.status(400).json({ error: 'Gift inválido.' });
-      }
       if (!isNonEmptyString(guestName) || !isNonEmptyString(guestEmail)) {
         return res.status(400).json({ error: 'Nome e e-mail são obrigatórios.' });
       }
 
-      const safeQuantity = Math.floor(parseNumber(quantity));
-      if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
-        return res.status(400).json({ error: 'Quantidade inválida.' });
+      const normalizedItems: Array<{
+        giftId: string;
+        giftName: string;
+        quantity: number;
+        unitPrice: number;
+        totalAmount: number;
+        managedByInventory: boolean;
+      }> = [];
+
+      const incomingItems =
+        Array.isArray(cartItems) && cartItems.length > 0
+          ? cartItems
+          : [{ giftId: giftId || '', quantity: Math.floor(parseNumber(quantity)) }];
+
+      for (const item of incomingItems) {
+        if (!isNonEmptyString(item.giftId)) {
+          return res.status(400).json({ error: 'Item de presente inválido.' });
+        }
+        const safeQuantity = Math.floor(parseNumber(item.quantity));
+        if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
+          return res.status(400).json({ error: `Quantidade inválida para ${item.giftId}.` });
+        }
+
+        const giftRef = db.collection('gifts').doc(item.giftId);
+        const giftDoc = await giftRef.get();
+        if (giftDoc.exists) {
+          const giftData = giftDoc.data()!;
+          const giftPrice = parseNumber(giftData.price);
+          const available = Math.floor(parseNumber(giftData.availableQuantity));
+          if (!Number.isFinite(giftPrice) || giftPrice < 0) {
+            return res.status(400).json({ error: `Preço inválido no presente ${item.giftId}.` });
+          }
+          if (safeQuantity > available) {
+            return res.status(409).json({ error: `Quantidade maior que estoque para ${giftData.name}.` });
+          }
+          normalizedItems.push({
+            giftId: item.giftId,
+            giftName: String(giftData.name || 'Presente'),
+            quantity: safeQuantity,
+            unitPrice: giftPrice,
+            totalAmount: Number((giftPrice * safeQuantity).toFixed(2)),
+            managedByInventory: true,
+          });
+        } else {
+          // fallback for fictitious catalog items used in demo/landing flows
+          if (paymentMode === 'infinitepay') {
+            return res.status(404).json({ error: `Presente não encontrado: ${item.giftId}` });
+          }
+          const unitPrice = parseNumber(item.unitPrice);
+          if (!isNonEmptyString(item.name) || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+            return res.status(400).json({ error: `Item custom inválido: ${item.giftId}` });
+          }
+          normalizedItems.push({
+            giftId: item.giftId,
+            giftName: item.name.trim(),
+            quantity: safeQuantity,
+            unitPrice,
+            totalAmount: Number((unitPrice * safeQuantity).toFixed(2)),
+            managedByInventory: false,
+          });
+        }
       }
 
-      const giftRef = db.collection('gifts').doc(giftId);
-      const giftDoc = await giftRef.get();
-      if (!giftDoc.exists) {
-        return res.status(404).json({ error: 'Presente não encontrado.' });
+      if (normalizedItems.length === 0) {
+        return res.status(400).json({ error: 'Carrinho vazio.' });
       }
 
-      const giftData = giftDoc.data()!;
-      const giftPrice = parseNumber(giftData.price);
-      const available = Math.floor(parseNumber(giftData.availableQuantity));
-      if (!Number.isFinite(giftPrice) || giftPrice < 0) {
-        return res.status(400).json({ error: 'Preço inválido no presente selecionado.' });
-      }
-      if (safeQuantity > available) {
-        return res.status(409).json({ error: 'Quantidade solicitada maior que o estoque disponível.' });
-      }
+      const cardEnabled = Boolean(printedCard?.enabled);
+      const cardFee = cardEnabled ? Math.max(0, Number(parseNumber(printedCard?.fee) || 0)) : 0;
+      const itemsTotal = normalizedItems.reduce((acc, item) => acc + item.totalAmount, 0);
+      const totalAmount = Number((itemsTotal + cardFee).toFixed(2));
+      const firstItem = normalizedItems[0];
 
-      const totalAmount = Number((giftPrice * safeQuantity).toFixed(2));
       const orderRef = await db.collection('orders').add({
-        giftId,
-        giftName: giftData.name,
+        giftId: firstItem.giftId,
+        giftName: firstItem.giftName,
         guestName,
         guestEmail,
-        quantity: safeQuantity,
+        quantity: firstItem.quantity,
+        items: normalizedItems,
+        printedCard: {
+          enabled: cardEnabled,
+          signerName: cardEnabled ? String(printedCard?.signerName || guestName) : '',
+          message: cardEnabled ? String(printedCard?.message || '') : '',
+          fee: cardFee,
+        },
         totalAmount,
         status: 'pending',
         paymentMethod: paymentMode,
@@ -245,7 +313,7 @@ async function startServer() {
       const payment = await createProviderPayment({
         orderId: orderRef.id,
         amount: totalAmount,
-        description: `${giftData.name} (${safeQuantity}x)`,
+        description: `${normalizedItems.length} item(ns) - ${firstItem.giftName}`,
         customerName: guestName,
         customerEmail: guestEmail,
       });
@@ -342,11 +410,19 @@ async function startServer() {
 
         const shouldDeductStock = currentStatus !== 'paid' && status === 'paid';
         if (shouldDeductStock) {
-          const giftRef = db.collection('gifts').doc(orderData.giftId);
-          const giftDoc = await transaction.get(giftRef);
-          if (giftDoc.exists) {
+          const items = Array.isArray(orderData.items)
+            ? orderData.items
+            : [{ giftId: orderData.giftId, quantity: orderData.quantity, managedByInventory: true }];
+
+          for (const item of items) {
+            if (!item?.managedByInventory) continue;
+            if (!isNonEmptyString(item.giftId)) continue;
+            const giftRef = db.collection('gifts').doc(item.giftId);
+            const giftDoc = await transaction.get(giftRef);
+            if (!giftDoc.exists) continue;
+
             const currentAvailable = Math.floor(parseNumber(giftDoc.data()!.availableQuantity));
-            const orderedQty = Math.floor(parseNumber(orderData.quantity));
+            const orderedQty = Math.floor(parseNumber(item.quantity));
             transaction.update(giftRef, {
               availableQuantity: Math.max(0, currentAvailable - orderedQty),
             });
@@ -387,11 +463,19 @@ async function startServer() {
             paidAt: new Date().toISOString(),
           });
 
-          const giftRef = db.collection('gifts').doc(orderData.giftId);
-          const giftDoc = await transaction.get(giftRef);
-          if (giftDoc.exists) {
+          const items = Array.isArray(orderData.items)
+            ? orderData.items
+            : [{ giftId: orderData.giftId, quantity: orderData.quantity, managedByInventory: true }];
+
+          for (const item of items) {
+            if (!item?.managedByInventory) continue;
+            if (!isNonEmptyString(item.giftId)) continue;
+            const giftRef = db.collection('gifts').doc(item.giftId);
+            const giftDoc = await transaction.get(giftRef);
+            if (!giftDoc.exists) continue;
+
             const currentAvailable = Math.floor(parseNumber(giftDoc.data()!.availableQuantity));
-            const orderedQty = Math.floor(parseNumber(orderData.quantity));
+            const orderedQty = Math.floor(parseNumber(item.quantity));
             transaction.update(giftRef, {
               availableQuantity: Math.max(0, currentAvailable - orderedQty),
             });

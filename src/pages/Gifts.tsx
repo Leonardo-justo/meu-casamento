@@ -1,81 +1,147 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { ShoppingCart, X, CreditCard, CheckCircle } from 'lucide-react';
+import { CreditCard, Minus, Plus, Send, ShoppingCart, Trash2 } from 'lucide-react';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useNavigate } from 'react-router-dom';
+
+type GiftItem = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  availableQuantity: number;
+};
+
+type CartItem = GiftItem & { quantity: number };
+
+const PRINTED_CARD_FEE = 19.9;
+
+const funnyFallbackGifts: GiftItem[] = [
+  {
+    id: 'fun-1',
+    name: 'Kit Sobrevivencia ao Casamento',
+    description: 'Cafe forte, chocolate e paciencia para as segundas-feiras a dois.',
+    price: 89.9,
+    imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80',
+    availableQuantity: 20,
+  },
+  {
+    id: 'fun-2',
+    name: 'Vale 1 DR com final feliz',
+    description: 'Contribua para um futuro com dialogo e abracos reconciliadores.',
+    price: 59.9,
+    imageUrl: 'https://images.unsplash.com/photo-1516589091380-5d8e87df6999?auto=format&fit=crop&w=1200&q=80',
+    availableQuantity: 50,
+  },
+  {
+    id: 'fun-3',
+    name: 'Panela Anti-Miojo da Crise',
+    description: 'Para incentivar jantares dignos e evitar miojo por impulso.',
+    price: 149.9,
+    imageUrl: 'https://images.unsplash.com/photo-1584990347449-a3e36f7e87f9?auto=format&fit=crop&w=1200&q=80',
+    availableQuantity: 15,
+  },
+  {
+    id: 'fun-4',
+    name: 'Fundo Lua de Mel 2.0',
+    description: 'Ajude no upgrade da viagem com sobremesa extra e passeio romântico.',
+    price: 199.9,
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+    availableQuantity: 60,
+  },
+  {
+    id: 'fun-5',
+    name: 'Assinatura anual de Pizza em Casal',
+    description: 'Porque todo casamento feliz tem pelo menos uma noite de pizza por semana.',
+    price: 129.9,
+    imageUrl: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=1200&q=80',
+    availableQuantity: 30,
+  },
+  {
+    id: 'fun-6',
+    name: 'Combo Controle Remoto da Paz',
+    description: 'Contribuicao para evitar disputa de serie no sofa.',
+    price: 79.9,
+    imageUrl: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=1200&q=80',
+    availableQuantity: 40,
+  },
+];
 
 export default function Gifts() {
   const navigate = useNavigate();
-  const [gifts, setGifts] = useState<any[]>([]);
-  const [selectedGift, setSelectedGift] = useState<any>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [guestInfo, setGuestInfo] = useState({ name: '', email: '' });
+  const [dbGifts, setDbGifts] = useState<GiftItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [includePrintedCard, setIncludePrintedCard] = useState(true);
+  const [cardSignerName, setCardSignerName] = useState('');
+  const [cardMessage, setCardMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const isGitHubPages = typeof window !== 'undefined' && window.location.hostname.endsWith('github.io');
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, 'gifts'),
       (snapshot) => {
-        const giftsList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setGifts(giftsList);
+        const list = snapshot.docs.map((entry) => ({ id: entry.id, ...(entry.data() as any) })) as GiftItem[];
+        setDbGifts(list);
       },
-      (error) => {
-        handleFirestoreError(error, OperationType.GET, 'gifts');
-      }
+      (error) => handleFirestoreError(error, OperationType.LIST, 'gifts')
     );
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!paymentUrl) return;
+  const catalog = dbGifts.length > 0 ? dbGifts : funnyFallbackGifts;
+  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const giftsSubtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const cardFee = includePrintedCard ? PRINTED_CARD_FEE : 0;
+  const total = giftsSubtotal + cardFee;
+  const cardCharsLeft = Math.max(0, 400 - cardMessage.length);
 
-    setRedirectCountdown(2);
-    const intervalId = setInterval(() => {
-      setRedirectCountdown((prev) => (prev && prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    const timeoutId = setTimeout(() => {
-      window.location.assign(paymentUrl);
-    }, 2200);
-
-    return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeoutId);
-    };
-  }, [paymentUrl]);
-
-  const handleBuy = async () => {
+  const addToCart = (gift: GiftItem) => {
     setErrorMessage(null);
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === gift.id);
+      if (existing) {
+        if (existing.quantity >= Number(gift.availableQuantity || 0)) return prev;
+        return prev.map((item) => (item.id === gift.id ? { ...item, quantity: item.quantity + 1 } : item));
+      }
+      return [...prev, { ...gift, quantity: 1 }];
+    });
+  };
 
+  const updateQuantity = (giftId: string, nextQuantity: number) => {
+    setCart((prev) => {
+      if (nextQuantity <= 0) return prev.filter((item) => item.id !== giftId);
+      return prev.map((item) => {
+        if (item.id !== giftId) return item;
+        const max = Math.max(1, Number(item.availableQuantity || 1));
+        return { ...item, quantity: Math.min(max, nextQuantity) };
+      });
+    });
+  };
+
+  const clearCart = () => setCart([]);
+
+  const canCheckout = useMemo(() => {
+    if (cart.length === 0) return false;
+    if (!guestName.trim() || !guestEmail.trim()) return false;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())) return false;
+    if (includePrintedCard && !cardMessage.trim()) return false;
+    return true;
+  }, [cart.length, guestName, guestEmail, includePrintedCard, cardMessage]);
+
+  const finishPurchase = async () => {
+    setErrorMessage(null);
     if (isGitHubPages) {
-      setErrorMessage(
-        'No GitHub Pages o pagamento não funciona (não há backend). Publique no Render/Railway para liberar checkout.'
-      );
+      setErrorMessage('No GitHub Pages o pagamento nao funciona. Para checkout real, publique com backend.');
       return;
     }
-
-    if (!guestInfo.name || !guestInfo.email) {
-      setErrorMessage('Por favor, preencha seu nome e e-mail.');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email)) {
-      setErrorMessage('Informe um e-mail válido.');
-      return;
-    }
-    if (!selectedGift) {
-      setErrorMessage('Selecione um presente para continuar.');
-      return;
-    }
-    if (!Number.isInteger(quantity) || quantity <= 0) {
-      setErrorMessage('Quantidade inválida.');
-      return;
-    }
-    if (quantity > selectedGift.availableQuantity) {
-      setErrorMessage('Quantidade maior que o disponível.');
+    if (!canCheckout) {
+      setErrorMessage('Preencha os dados do comprador e mensagem do cartao para continuar.');
       return;
     }
 
@@ -85,29 +151,40 @@ export default function Gifts() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          giftId: selectedGift.id,
-          quantity,
-          guestName: guestInfo.name.trim(),
-          guestEmail: guestInfo.email.trim(),
+          guestName: guestName.trim(),
+          guestEmail: guestEmail.trim(),
+          cartItems: cart.map((item) => ({
+            giftId: item.id,
+            name: item.name,
+            unitPrice: Number(item.price),
+            quantity: Number(item.quantity),
+          })),
+          printedCard: {
+            enabled: includePrintedCard,
+            signerName: includePrintedCard ? (cardSignerName.trim() || guestName.trim()) : '',
+            message: includePrintedCard ? cardMessage.trim() : '',
+            fee: includePrintedCard ? PRINTED_CARD_FEE : 0,
+          },
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Erro ao criar pagamento.');
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || 'Nao foi possivel concluir sua compra agora.');
       }
 
       const data = await response.json();
       if (data.paymentUrl) {
-        setPaymentUrl(data.paymentUrl);
-      } else if (data.orderId) {
-        navigate(`/payment/${data.orderId}?result=pending`);
-      } else {
-        setErrorMessage('Pedido criado, mas não foi possível obter o link de pagamento.');
+        window.location.assign(data.paymentUrl);
+        return;
       }
+      if (data.orderId) {
+        navigate(`/payment/${data.orderId}?result=pending`);
+        return;
+      }
+      throw new Error('Pedido criado sem link de pagamento.');
     } catch (error) {
-      console.error('Error creating payment:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Erro ao processar pagamento. Tente novamente.');
+      setErrorMessage(error instanceof Error ? error.message : 'Erro inesperado ao finalizar compra.');
     } finally {
       setIsProcessing(false);
     }
@@ -115,209 +192,211 @@ export default function Gifts() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-20">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
         <h1 className="text-5xl font-serif text-stone-800 mb-4">Lista de Presentes</h1>
-        <p className="text-stone-500 max-w-2xl mx-auto font-light">
-          Sua presença é o nosso maior presente, mas se você desejar nos presentear, escolhemos algumas sugestões para
-          nos ajudar a começar nossa vida juntos.
+        <p className="text-stone-500 max-w-3xl mx-auto">
+          Escolha ate tres presentes por compra e, se quiser, envie uma carta para ser impressa e entregue ao casal.
         </p>
-        <p className="text-xs text-stone-400 mt-3 uppercase tracking-widest">
-          Obrigado por fazer parte desse momento especial
-        </p>
-        {isGitHubPages && (
-          <p className="mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 inline-block">
-            Modo GitHub Pages: checkout desativado. Para pagamento real, publique em hospedagem com backend.
-          </p>
-        )}
+        <p className="text-xs text-stone-400 mt-3 uppercase tracking-widest">Carrinho: {cartCount} item(ns)</p>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {gifts.map((gift, index) => (
-          <motion.div
-            key={gift.id}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05 }}
-            className="bg-white rounded-3xl overflow-hidden shadow-sm border border-stone-100 group hover:shadow-xl transition-all duration-500"
-          >
-            <div className="h-64 overflow-hidden relative">
-              <img
-                src={
-                  gift.imageUrl ||
-                  'https://images.unsplash.com/photo-1513151233558-d860c5398176?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-                }
-                alt={gift.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-1 rounded-full text-stone-800 font-serif font-bold">
-                R$ {Number(gift.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-            </div>
-            <div className="p-8">
-              <h3 className="text-2xl font-serif text-stone-800 mb-2">{gift.name}</h3>
-              <p className="text-stone-500 text-sm font-light mb-6 line-clamp-2">{gift.description}</p>
-              <button
-                onClick={() => setSelectedGift(gift)}
-                disabled={gift.availableQuantity <= 0}
-                className="w-full py-3 bg-stone-800 text-white uppercase tracking-widest text-xs font-bold rounded-xl hover:bg-stone-700 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:bg-stone-300"
-              >
-                {gift.availableQuantity > 0 ? (
-                  <>
-                    <ShoppingCart size={16} />
-                    <span>Presentear</span>
-                  </>
-                ) : (
-                  <span>Esgotado</span>
-                )}
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <AnimatePresence>
-        {selectedGift && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
-            >
-              <div className="p-6 border-b border-stone-100 flex justify-between items-center">
-                <h3 className="text-2xl font-serif text-stone-800">Presentear</h3>
-                <button
-                  onClick={() => {
-                    setSelectedGift(null);
-                    setPaymentUrl(null);
-                    setErrorMessage(null);
-                    setRedirectCountdown(null);
-                  }}
-                  type="button"
-                  className="text-stone-400 hover:text-stone-800"
+      <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8">
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {catalog.map((gift, index) => {
+              const inCartQty = cart.find((item) => item.id === gift.id)?.quantity || 0;
+              const maxReached = inCartQty >= Number(gift.availableQuantity || 0);
+              return (
+                <motion.div
+                  key={gift.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04 }}
+                  className="bg-white rounded-3xl border border-stone-100 overflow-hidden shadow-sm"
                 >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="p-8">
-                {!paymentUrl ? (
-                  <div className="space-y-6">
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={selectedGift.imageUrl}
-                        alt=""
-                        className="w-20 h-20 object-cover rounded-xl"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div>
-                        <h4 className="font-serif text-xl text-stone-800">{selectedGift.name}</h4>
-                        <p className="text-stone-500">
-                          R$ {Number(selectedGift.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-widest text-stone-500 font-bold">Seu Nome</label>
-                        <input
-                          type="text"
-                          value={guestInfo.name}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
-                          className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
-                          placeholder="Nome completo"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-widest text-stone-500 font-bold">Seu E-mail</label>
-                        <input
-                          type="email"
-                          value={guestInfo.email}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
-                          className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
-                          placeholder="seu@email.com"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-widest text-stone-500 font-bold">Quantidade</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max={selectedGift.availableQuantity}
-                          value={quantity}
-                          onChange={(e) => {
-                            const parsed = Number.parseInt(e.target.value, 10);
-                            setQuantity(Number.isNaN(parsed) ? 1 : parsed);
-                          }}
-                          className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
-                        />
-                      </div>
-                    </div>
-
-                    {errorMessage && (
-                      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                        {errorMessage}
-                      </div>
-                    )}
-
-                    <div className="pt-4 border-t border-stone-100 flex justify-between items-center">
-                      <span className="text-stone-500">Total:</span>
-                      <span className="text-2xl font-serif font-bold text-stone-800">
-                        R${' '}
-                        {(Number(selectedGift.price || 0) * quantity).toLocaleString('pt-BR', {
-                          minimumFractionDigits: 2,
-                        })}
+                  <img
+                    src={gift.imageUrl}
+                    alt={gift.name}
+                    className="w-full h-56 object-cover"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1000&q=80';
+                    }}
+                  />
+                  <div className="p-6">
+                    <h3 className="text-2xl font-serif text-stone-800">{gift.name}</h3>
+                    <p className="text-sm text-stone-500 mt-1 mb-3">{gift.description}</p>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="font-serif text-xl text-stone-800">
+                        R$ {Number(gift.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
+                      <span className="text-xs text-stone-400">Disponivel: {gift.availableQuantity}</span>
                     </div>
-
                     <button
-                      onClick={handleBuy}
-                      disabled={isProcessing}
-                      className="w-full py-4 bg-stone-800 text-white uppercase tracking-widest text-sm font-bold rounded-xl hover:bg-stone-700 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+                      onClick={() => addToCart(gift)}
+                      disabled={maxReached || cartCount >= 3}
+                      className="w-full py-3 rounded-xl bg-stone-800 text-white uppercase tracking-widest text-xs font-bold hover:bg-stone-700 disabled:opacity-60"
                     >
-                      {isProcessing ? (
-                        'Processando...'
-                      ) : (
-                        <>
-                          <CreditCard size={18} />
-                          <span>Ir para pagamento</span>
-                        </>
-                      )}
+                      {maxReached ? 'Limite atingido' : cartCount >= 3 ? 'Maximo de 3 itens' : 'Adicionar ao carrinho'}
                     </button>
                   </div>
-                ) : (
-                  <div className="text-center py-8 space-y-6">
-                    <CheckCircle className="mx-auto text-emerald-400" size={64} />
-                    <h4 className="text-2xl font-serif text-stone-800">Pedido criado!</h4>
-                    <p className="text-stone-600">Você será redirecionado automaticamente para finalizar o pagamento.</p>
-                    <a
-                      href={paymentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block w-full py-4 bg-emerald-500 text-white uppercase tracking-widest text-sm font-bold rounded-xl hover:bg-emerald-600 transition-colors"
-                    >
-                      Pagar agora
-                    </a>
-                    {redirectCountdown !== null && (
-                      <p className="text-xs text-stone-400">Redirecionando em {redirectCountdown}s...</p>
-                    )}
-                    <p className="text-xs text-stone-400">
-                      Após o pagamento, o casal será notificado automaticamente.
-                    </p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl border border-stone-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-serif text-stone-800 flex items-center gap-2">
+                <ShoppingCart size={20} className="text-stone-500" />
+                Meu carrinho
+              </h2>
+              {cart.length > 0 && (
+                <button onClick={clearCart} className="text-xs uppercase tracking-widest text-stone-400 hover:text-rose-500">
+                  Limpar
+                </button>
+              )}
+            </div>
+
+            {cart.length === 0 ? (
+              <p className="text-stone-400 text-sm">Seu carrinho esta vazio.</p>
+            ) : (
+              <div className="space-y-3">
+                {cart.map((item) => (
+                  <div key={item.id} className="border border-stone-100 rounded-2xl p-3">
+                    <div className="flex justify-between gap-3">
+                      <div>
+                        <p className="font-serif text-stone-800">{item.name}</p>
+                        <p className="text-xs text-stone-400">
+                          R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <button onClick={() => updateQuantity(item.id, 0)} className="text-stone-300 hover:text-rose-500">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="w-7 h-7 rounded-lg border border-stone-200 flex items-center justify-center"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className="w-8 text-center">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="w-7 h-7 rounded-lg border border-stone-200 flex items-center justify-center"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      <p className="font-medium text-stone-700">
+                        R$ {(item.quantity * item.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            )}
+          </div>
+
+          <div className="bg-white rounded-3xl border border-stone-100 shadow-sm p-6 space-y-4">
+            <h2 className="text-2xl font-serif text-stone-800">Resumo da compra</h2>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between text-stone-600">
+                <span>Valor dos presentes</span>
+                <span>R$ {giftsSubtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between text-stone-600">
+                <span>Carta impressa</span>
+                <span>{includePrintedCard ? `R$ ${cardFee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Removido'}</span>
+              </div>
+              <div className="border-t border-stone-100 pt-2 flex justify-between font-serif text-stone-800 text-xl">
+                <span>Total</span>
+                <span>R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-widest text-stone-500 font-bold">Nome de quem compra</label>
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
+                placeholder="Seu nome"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-widest text-stone-500 font-bold">E-mail</label>
+              <input
+                type="email"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
+                placeholder="seu@email.com"
+              />
+            </div>
+
+            <div className="rounded-2xl border border-stone-100 p-4 space-y-3">
+              <label className="flex items-center gap-2 text-sm text-stone-700">
+                <input
+                  type="checkbox"
+                  checked={includePrintedCard}
+                  onChange={(e) => setIncludePrintedCard(e.target.checked)}
+                />
+                Quero enviar uma carta impressa para o casal
+              </label>
+
+              {includePrintedCard && (
+                <>
+                  <input
+                    type="text"
+                    value={cardSignerName}
+                    onChange={(e) => setCardSignerName(e.target.value)}
+                    className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
+                    placeholder="Nome para assinar no cartao"
+                  />
+                  <textarea
+                    value={cardMessage}
+                    onChange={(e) => setCardMessage(e.target.value)}
+                    maxLength={400}
+                    className="w-full h-28 px-4 py-3 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:border-rose-200"
+                    placeholder="Escreva seu recado para ser impresso..."
+                  />
+                  <p className="text-xs text-stone-400">{cardCharsLeft} caracteres restantes</p>
+                </>
+              )}
+            </div>
+
+            {errorMessage && (
+              <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</p>
+            )}
+
+            <button
+              onClick={finishPurchase}
+              disabled={!canCheckout || isProcessing}
+              className="w-full py-4 bg-stone-800 text-white uppercase tracking-widest text-sm font-bold rounded-xl hover:bg-stone-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              <CreditCard size={18} />
+              {isProcessing ? 'Processando compra...' : 'Concluir compra'}
+            </button>
+
+            {isGitHubPages && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                Modo GitHub Pages: checkout desativado (sem backend).
+              </p>
+            )}
+            <p className="text-xs text-stone-400">
+              Ao concluir a compra, o pedido e a carta ficam registrados e o casal recebe no painel.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

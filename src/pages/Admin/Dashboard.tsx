@@ -42,9 +42,12 @@ export default function Dashboard() {
       let pending = 0;
       snapshot.docs.forEach(doc => {
         const data = doc.data();
+        const orderItemsQuantity = Array.isArray(data.items)
+          ? data.items.reduce((acc: number, item: any) => acc + Number(item.quantity || 0), 0)
+          : Number(data.quantity || 0);
         if (data.status === 'paid') {
           total += data.totalAmount;
-          sold += data.quantity;
+          sold += orderItemsQuantity;
         } else if (data.status === 'pending' || data.status === 'awaiting_payment') {
           pending++;
         }

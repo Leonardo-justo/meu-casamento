@@ -32,3 +32,18 @@ Este projeto contém frontend (React + Vite) e backend (Express) no mesmo app.
 - Em desenvolvimento, você pode usar:
   - `PAYMENT_MODE="mock"` para fluxo de teste local.
   - `PAYMENT_MODE="pix_manual"` para exibir link/chave PIX manual.
+
+## Publicar no GitHub Pages (frontend)
+
+Este repositório já está preparado para publicar no Pages.
+
+1. Suba o código para o GitHub (branch `main`).
+2. No GitHub, vá em `Settings` -> `Pages`.
+3. Em `Source`, selecione `GitHub Actions`.
+4. O workflow `Deploy GitHub Pages` será executado automaticamente a cada push no `main`.
+5. O link ficará em:
+   - `https://SEU_USUARIO.github.io/NOME_DO_REPOSITORIO/`
+
+Observação importante:
+- No GitHub Pages funciona a interface, RSVP e leitura de dados do Firebase.
+- Pagamento (`/api/payments/*`) exige backend Node e não funciona no Pages.

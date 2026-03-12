@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { ShoppingCart, X, CreditCard, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Gifts() {
+  const navigate = useNavigate();
   const [gifts, setGifts] = useState<any[]>([]);
   const [selectedGift, setSelectedGift] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
@@ -13,6 +15,7 @@ export default function Gifts() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const isGitHubPages = typeof window !== 'undefined' && window.location.hostname.endsWith('github.io');
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -47,6 +50,13 @@ export default function Gifts() {
 
   const handleBuy = async () => {
     setErrorMessage(null);
+
+    if (isGitHubPages) {
+      setErrorMessage(
+        'No GitHub Pages o pagamento não funciona (não há backend). Publique no Render/Railway para liberar checkout.'
+      );
+      return;
+    }
 
     if (!guestInfo.name || !guestInfo.email) {
       setErrorMessage('Por favor, preencha seu nome e e-mail.');
@@ -91,7 +101,7 @@ export default function Gifts() {
       if (data.paymentUrl) {
         setPaymentUrl(data.paymentUrl);
       } else if (data.orderId) {
-        window.location.assign(`/payment/${data.orderId}?result=pending`);
+        navigate(`/payment/${data.orderId}?result=pending`);
       } else {
         setErrorMessage('Pedido criado, mas não foi possível obter o link de pagamento.');
       }
@@ -111,6 +121,11 @@ export default function Gifts() {
           Sua presença é o nosso maior presente, mas se você desejar nos presentear, escolhemos algumas sugestões para
           nos ajudar a começar nossa vida juntos.
         </p>
+        {isGitHubPages && (
+          <p className="mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 inline-block">
+            Modo GitHub Pages: checkout desativado. Para pagamento real, publique em hospedagem com backend.
+          </p>
+        )}
       </motion.div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

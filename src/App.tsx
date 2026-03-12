@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Heart, Menu, X, Calendar, MapPin, Gift, Image as ImageIcon, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -156,9 +156,15 @@ const Footer = () => (
 );
 
 export default function App() {
+  const RouterComponent =
+    typeof window !== 'undefined' &&
+    (window.location.hostname.endsWith('github.io') || import.meta.env.VITE_USE_HASH_ROUTER === 'true')
+      ? HashRouter
+      : BrowserRouter;
+
   return (
     <ErrorBoundary>
-      <Router>
+      <RouterComponent>
         <div className="min-h-screen flex flex-col">
           <Navbar />
           <main className="flex-grow pt-20">
@@ -182,7 +188,7 @@ export default function App() {
           </main>
           <Footer />
         </div>
-      </Router>
+      </RouterComponent>
     </ErrorBoundary>
   );
 }

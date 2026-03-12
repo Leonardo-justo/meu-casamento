@@ -4,7 +4,18 @@ import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+export const db = (() => {
+  try {
+    if (firebaseConfig.firestoreDatabaseId) {
+      return getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    }
+    return getFirestore(app);
+  } catch (error) {
+    console.error('Falha ao iniciar Firestore com databaseId específico. Usando padrão.', error);
+    return getFirestore(app);
+  }
+})();
 export const auth = getAuth(app);
 
 export enum OperationType {
@@ -55,5 +66,5 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  return errInfo;
 }

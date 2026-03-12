@@ -42,7 +42,7 @@ export default function RSVP() {
           <CheckCircle className="mx-auto text-emerald-400 mb-6" size={64} />
           <h2 className="text-4xl font-serif text-stone-800 mb-4">Presença Confirmada!</h2>
           <p className="text-stone-600 mb-8">
-            Obrigado por confirmar sua presença. Mal podemos esperar para celebrar com você!
+            Obrigado por confirmar sua presença. Estamos muito felizes em compartilhar esse dia com voce.
           </p>
           <button
             onClick={() => setStatus('idle')}
@@ -63,7 +63,7 @@ export default function RSVP() {
         className="text-center mb-16"
       >
         <h1 className="text-5xl font-serif text-stone-800 mb-4">Confirmação de Presença</h1>
-        <p className="text-stone-500 uppercase tracking-widest text-xs">Por favor, confirme até 30 dias antes do evento</p>
+        <p className="text-stone-500 uppercase tracking-widest text-xs">Confirme ate 30 dias antes do evento</p>
       </motion.div>
 
       <motion.form

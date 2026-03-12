@@ -121,6 +121,9 @@ export default function Gifts() {
           Sua presença é o nosso maior presente, mas se você desejar nos presentear, escolhemos algumas sugestões para
           nos ajudar a começar nossa vida juntos.
         </p>
+        <p className="text-xs text-stone-400 mt-3 uppercase tracking-widest">
+          Obrigado por fazer parte desse momento especial
+        </p>
         {isGitHubPages && (
           <p className="mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 inline-block">
             Modo GitHub Pages: checkout desativado. Para pagamento real, publique em hospedagem com backend.

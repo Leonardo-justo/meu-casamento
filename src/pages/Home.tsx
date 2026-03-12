@@ -108,10 +108,9 @@ export default function Home() {
           <Heart className="mx-auto text-rose-200 fill-rose-200" size={32} />
           <h2 className="text-4xl font-serif text-stone-800">Sejam bem-vindos!</h2>
           <p className="text-stone-600 leading-relaxed text-lg font-light">
-            Estamos muito felizes em compartilhar este momento tão especial com vocês. 
-            Aqui vocês encontrarão todas as informações sobre o nosso grande dia, 
-            poderão confirmar sua presença e nos ajudar a construir nosso novo lar 
-            através da nossa lista de presentes.
+            Com o coracao cheio de gratidao, criamos este espacinho para compartilhar cada detalhe do nosso grande dia.
+            Aqui voce encontra informacoes da cerimonia e recepcao, confirma sua presenca, deixa seu recado e acompanha
+            nossa lista de presentes.
           </p>
           <div className="pt-8 flex gap-3 justify-center flex-wrap">
             <Link
@@ -131,6 +130,10 @@ export default function Home() {
       </section>
 
       <section className="max-w-6xl mx-auto px-4 pb-24">
+        <div className="text-center mb-8">
+          <p className="uppercase tracking-[0.25em] text-xs text-stone-400">Nosso convite</p>
+          <h3 className="text-4xl font-serif text-stone-800 mt-3">Tudo em um so lugar</h3>
+        </div>
         <div className="grid md:grid-cols-3 gap-6">
           {[
             {
@@ -142,8 +145,8 @@ export default function Home() {
             },
             {
               title: 'Lista de Presentes',
-              desc: 'Escolha um presente com carinho e ajude a construir nosso novo lar.',
-              sub: 'Pagamento e mensagem para os noivos',
+              desc: 'Escolha um presente com carinho para nos ajudar a comecar esse novo capitulo.',
+              sub: 'Opcao pratica e segura para presentear',
               link: '/gifts',
               cta: 'Presentear',
             },

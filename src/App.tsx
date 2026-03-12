@@ -15,6 +15,8 @@ import RSVP from './pages/RSVP';
 import Gifts from './pages/Gifts';
 import Gallery from './pages/Gallery';
 import Messages from './pages/Messages';
+import DressCode from './pages/DressCode';
+import Farewell from './pages/Farewell';
 import PaymentStatusPage from './pages/PaymentStatus';
 import Login from './pages/Admin/Login';
 import Dashboard from './pages/Admin/Dashboard';
@@ -40,11 +42,13 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Nossa História', path: '/story' },
-    { name: 'Informações', path: '/info' },
+    { name: 'Cerimônia', path: '/info' },
+    { name: 'Trajes', path: '/dress-code' },
     { name: 'RSVP', path: '/rsvp' },
     { name: 'Lista de Presentes', path: '/gifts' },
     { name: 'Recados', path: '/messages' },
     { name: 'Galeria', path: '/gallery' },
+    { name: 'Até Breve', path: '/ate-breve' },
   ];
 
   const adminLinks = [
@@ -173,10 +177,12 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/story" element={<Story />} />
               <Route path="/info" element={<Info />} />
+              <Route path="/dress-code" element={<DressCode />} />
               <Route path="/rsvp" element={<RSVP />} />
               <Route path="/gifts" element={<Gifts />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/gallery" element={<Gallery />} />
+              <Route path="/ate-breve" element={<Farewell />} />
               <Route path="/payment/:orderId" element={<PaymentStatusPage />} />
               
               {/* Admin Routes */}

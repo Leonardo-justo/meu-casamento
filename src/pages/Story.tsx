@@ -26,7 +26,7 @@ export default function Story() {
         <div className="h-px w-24 bg-rose-200 mx-auto"></div>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-12 items-center">
+      <div className="grid md:grid-cols-2 gap-12 items-center mb-14">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
@@ -53,6 +53,19 @@ export default function Story() {
             Ao longo desses anos, aprendemos que o amor está nos pequenos detalhes, no apoio mútuo e na vontade de construir um futuro juntos. Estamos ansiosos para celebrar o início deste novo capítulo com todos vocês.
           </p>
         </motion.div>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-4">
+        {[
+          { title: 'Primeiro encontro', text: 'Um dia simples, uma conversa leve e a certeza de que algo especial estava comecando.' },
+          { title: 'Nossa caminhada', text: 'Entre planos, desafios e conquistas, aprendemos a escolher um ao outro todos os dias.' },
+          { title: 'O grande sim', text: 'Agora chegou a hora de celebrar esse novo capitulo com quem amamos.' },
+        ].map((item) => (
+          <div key={item.title} className="bg-white border border-stone-100 rounded-2xl p-5 shadow-sm">
+            <h3 className="text-2xl font-serif text-stone-800 mb-2">{item.title}</h3>
+            <p className="text-stone-600 text-sm leading-relaxed">{item.text}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

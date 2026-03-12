@@ -14,13 +14,13 @@ import Info from './pages/Info';
 import RSVP from './pages/RSVP';
 import Gifts from './pages/Gifts';
 import Gallery from './pages/Gallery';
-import PaymentStatusPage from './pages/PaymentStatus.tsx';
+import PaymentStatusPage from './pages/PaymentStatus';
 import Login from './pages/Admin/Login';
 import Dashboard from './pages/Admin/Dashboard';
 import AdminContent from './pages/Admin/Content';
 import AdminGifts from './pages/Admin/Gifts';
 import AdminRSVPs from './pages/Admin/RSVPs';
-import AdminGallery from './pages/Admin/Gallery.tsx';
+import AdminGallery from './pages/Admin/Gallery';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -157,8 +157,7 @@ const Footer = () => (
 
 export default function App() {
   const RouterComponent =
-    typeof window !== 'undefined' &&
-    (window.location.hostname.endsWith('github.io') || import.meta.env.VITE_USE_HASH_ROUTER === 'true')
+    typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')
       ? HashRouter
       : BrowserRouter;
 

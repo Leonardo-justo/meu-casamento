@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { Heart } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Home() {
   const [weddingInfo, setWeddingInfo] = useState<any>(null);
@@ -112,12 +113,58 @@ export default function Home() {
             poderão confirmar sua presença e nos ajudar a construir nosso novo lar 
             através da nossa lista de presentes.
           </p>
-          <div className="pt-8">
-            <button className="px-8 py-3 border border-stone-800 text-stone-800 uppercase tracking-widest text-xs hover:bg-stone-800 hover:text-white transition-all">
+          <div className="pt-8 flex gap-3 justify-center flex-wrap">
+            <Link
+              to="/rsvp"
+              className="px-8 py-3 border border-stone-800 text-stone-800 uppercase tracking-widest text-xs hover:bg-stone-800 hover:text-white transition-all"
+            >
               Confirmar Presença
-            </button>
+            </Link>
+            <Link
+              to="/messages"
+              className="px-8 py-3 border border-rose-300 text-rose-500 uppercase tracking-widest text-xs hover:bg-rose-50 transition-all"
+            >
+              Enviar Recado
+            </Link>
           </div>
         </motion.div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-4 pb-24">
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              title: 'Cerimônia',
+              desc: weddingInfo?.ceremonyLocationName || weddingInfo?.locationName || 'Igreja',
+              sub: weddingInfo?.ceremonyLocationAddress || weddingInfo?.locationAddress || 'São José do Rio Preto - SP',
+              link: '/info',
+              cta: 'Ver detalhes',
+            },
+            {
+              title: 'Lista de Presentes',
+              desc: 'Escolha um presente com carinho e ajude a construir nosso novo lar.',
+              sub: 'Pagamento e mensagem para os noivos',
+              link: '/gifts',
+              cta: 'Presentear',
+            },
+            {
+              title: 'Recados',
+              desc: 'Deixe uma mensagem para guardar esse momento para sempre.',
+              sub: 'Mural de mensagens dos convidados',
+              link: '/messages',
+              cta: 'Enviar recado',
+            },
+          ].map((item) => (
+            <div key={item.title} className="bg-white border border-stone-100 rounded-3xl p-7 shadow-sm">
+              <h3 className="text-2xl font-serif text-stone-800">{item.title}</h3>
+              <p className="text-stone-600 mt-2">{item.desc}</p>
+              <p className="text-xs text-stone-400 mt-2">{item.sub}</p>
+              <Link to={item.link} className="inline-block mt-5 text-sm uppercase tracking-widest text-rose-500 hover:text-rose-600">
+                {item.cta}
+              </Link>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );

@@ -50,6 +50,13 @@
 //   - caption: string
 //   - order: int
 //
+// Collection: messages
+// Fields:
+//   - name: string (required)
+//   - email: string (required, email)
+//   - text: string (required)
+//   - createdAt: string (date-time)
+//
 // ===============================================================
 
 rules_version = '2';
@@ -128,6 +135,14 @@ service cloud.firestore {
              (!('order' in data) || (data.order is int && data.order >= 0));
     }
 
+    function isValidMessage(data) {
+      return data.keys().hasAll(['name', 'email', 'text', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 120 &&
+             isValidEmail(data.email) &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 400 &&
+             isValidDateString(data.createdAt);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -159,6 +174,12 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isAdmin() && isValidGalleryItem(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    match /messages/{messageId} {
+      allow read: if true;
+      allow create: if isValidMessage(request.resource.data);
+      allow update, delete: if isAdmin();
     }
 
     match /users/{userId} {

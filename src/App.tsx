@@ -14,6 +14,7 @@ import Info from './pages/Info';
 import RSVP from './pages/RSVP';
 import Gifts from './pages/Gifts';
 import Gallery from './pages/Gallery';
+import Messages from './pages/Messages';
 import PaymentStatusPage from './pages/PaymentStatus';
 import Login from './pages/Admin/Login';
 import Dashboard from './pages/Admin/Dashboard';
@@ -42,6 +43,7 @@ const Navbar = () => {
     { name: 'Informações', path: '/info' },
     { name: 'RSVP', path: '/rsvp' },
     { name: 'Lista de Presentes', path: '/gifts' },
+    { name: 'Recados', path: '/messages' },
     { name: 'Galeria', path: '/gallery' },
   ];
 
@@ -173,6 +175,7 @@ export default function App() {
               <Route path="/info" element={<Info />} />
               <Route path="/rsvp" element={<RSVP />} />
               <Route path="/gifts" element={<Gifts />} />
+              <Route path="/messages" element={<Messages />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/payment/:orderId" element={<PaymentStatusPage />} />
               

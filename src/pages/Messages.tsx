@@ -73,9 +73,9 @@ export default function Messages() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-20">
+    <div className="max-w-5xl mx-auto px-4 py-14 md:py-20">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-        <h1 className="text-5xl font-serif text-stone-800 mb-3">Recados</h1>
+        <h1 className="text-4xl md:text-5xl font-serif text-stone-800 mb-3">Recados</h1>
         <p className="text-stone-500 max-w-2xl mx-auto">
           Se quiserem nos deixar uma mensagem, ficaremos muito felizes em ler. Cada recado sera guardado com carinho.
         </p>

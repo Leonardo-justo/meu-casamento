@@ -56,13 +56,13 @@ export default function RSVP() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-20">
+    <div className="max-w-3xl mx-auto px-4 py-14 md:py-20">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-16"
       >
-        <h1 className="text-5xl font-serif text-stone-800 mb-4">Confirmação de Presença</h1>
+        <h1 className="text-4xl md:text-5xl font-serif text-stone-800 mb-4">Confirmação de Presença</h1>
         <p className="text-stone-500 uppercase tracking-widest text-xs">Confirme ate 30 dias antes do evento</p>
       </motion.div>
 

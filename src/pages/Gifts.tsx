@@ -191,9 +191,9 @@ export default function Gifts() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-20">
+    <div className="max-w-7xl mx-auto px-4 py-14 md:py-20">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-        <h1 className="text-5xl font-serif text-stone-800 mb-4">Lista de Presentes</h1>
+        <h1 className="text-4xl md:text-5xl font-serif text-stone-800 mb-4">Lista de Presentes</h1>
         <p className="text-stone-500 max-w-3xl mx-auto">
           Escolha ate tres presentes por compra e, se quiser, envie uma carta para ser impressa e entregue ao casal.
         </p>

@@ -24,13 +24,13 @@ export default function Info() {
     : 'Em breve';
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-20">
+    <div className="max-w-6xl mx-auto px-4 py-14 md:py-20">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-16"
       >
-        <h1 className="text-5xl font-serif text-stone-800 mb-4">Informações do Evento</h1>
+        <h1 className="text-4xl md:text-5xl font-serif text-stone-800 mb-4">Informações do Evento</h1>
         <p className="text-stone-500 uppercase tracking-widest text-xs">Tudo o que você precisa saber</p>
       </motion.div>
 
@@ -75,7 +75,7 @@ export default function Info() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="rounded-3xl overflow-hidden shadow-lg h-[450px] border-8 border-white"
+          className="rounded-3xl overflow-hidden shadow-lg h-[320px] md:h-[450px] border-8 border-white"
         >
           <iframe
             src={weddingInfo.locationMapUrl}

@@ -33,10 +33,10 @@ export default function DressCode() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-20">
+    <div className="max-w-6xl mx-auto px-4 py-14 md:py-20">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-14">
         <p className="uppercase tracking-[0.25em] text-xs text-stone-400 mb-3">Trajes</p>
-        <h1 className="text-5xl font-serif text-stone-800">Dress Code</h1>
+        <h1 className="text-4xl md:text-5xl font-serif text-stone-800">Dress Code</h1>
         <p className="text-stone-500 mt-4 max-w-2xl mx-auto">
           Queremos que todos estejam confortáveis e elegantes para viver esse momento com a gente.
         </p>

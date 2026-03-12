@@ -60,7 +60,7 @@ export default function Home() {
 
   return (
     <div className="relative">
-      <section id="inicio" className="scroll-mt-28 h-[90vh] relative flex items-center justify-center overflow-hidden">
+      <section id="inicio" className="scroll-mt-28 h-[82vh] md:h-[90vh] relative flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
             src={
@@ -81,7 +81,7 @@ export default function Home() {
           className="z-10 text-center px-4"
         >
           <span className="text-stone-500 uppercase tracking-[0.3em] text-sm mb-4 block">Save the Date</span>
-          <h1 className="text-5xl md:text-8xl font-serif text-stone-800 mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-8xl font-serif text-stone-800 mb-6">
             {weddingInfo?.coupleNames || 'Bruna e Leonardo'}
           </h1>
           <div className="flex items-center justify-center space-x-4 text-stone-600 mb-8">
@@ -98,7 +98,7 @@ export default function Home() {
             <div className="h-px w-12 bg-stone-300" />
           </div>
 
-          <div className="grid grid-cols-4 gap-4 max-w-md mx-auto">
+          <div className="grid grid-cols-4 gap-2 sm:gap-4 max-w-md mx-auto">
             {[
               { label: 'Dias', value: timeLeft.days },
               { label: 'Horas', value: timeLeft.hours },
@@ -114,7 +114,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <section className="py-16 px-4 max-w-4xl mx-auto text-center">
+      <section className="py-12 md:py-16 px-4 max-w-4xl mx-auto text-center">
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="space-y-8">
           <Heart className="mx-auto text-rose-200 fill-rose-200" size={32} />
           <h2 className="text-4xl font-serif text-stone-800">Sejam bem-vindos!</h2>
@@ -125,28 +125,28 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <section id="historia" className="scroll-mt-28">
+      <section id="historia" className="scroll-mt-28 border-t border-stone-100/70">
         <Story />
       </section>
-      <section id="cerimonia" className="scroll-mt-28">
+      <section id="cerimonia" className="scroll-mt-28 border-t border-stone-100/70">
         <Info />
       </section>
-      <section id="trajes" className="scroll-mt-28">
+      <section id="trajes" className="scroll-mt-28 border-t border-stone-100/70">
         <DressCode />
       </section>
-      <section id="presentes" className="scroll-mt-28">
+      <section id="presentes" className="scroll-mt-28 border-t border-stone-100/70">
         <Gifts />
       </section>
-      <section id="recados" className="scroll-mt-28">
+      <section id="recados" className="scroll-mt-28 border-t border-stone-100/70">
         <Messages />
       </section>
-      <section id="galeria" className="scroll-mt-28">
+      <section id="galeria" className="scroll-mt-28 border-t border-stone-100/70">
         <Gallery />
       </section>
-      <section id="rsvp" className="scroll-mt-28">
+      <section id="rsvp" className="scroll-mt-28 border-t border-stone-100/70">
         <RSVP />
       </section>
-      <section id="ate-breve" className="scroll-mt-28">
+      <section id="ate-breve" className="scroll-mt-28 border-t border-stone-100/70">
         <Farewell />
       </section>
     </div>

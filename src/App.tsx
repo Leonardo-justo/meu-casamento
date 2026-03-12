@@ -1,6 +1,6 @@
 import { BrowserRouter, HashRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Heart, Menu, X, Calendar, MapPin, Gift, Image as ImageIcon, CheckCircle } from 'lucide-react';
+import { Heart, Menu, X, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -199,6 +199,30 @@ const Footer = () => (
   </footer>
 );
 
+const BackToTopButton = () => {
+  const [visible, setVisible] = useState(false);
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith('/admin');
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 500);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  if (isAdminPath || !visible) return null;
+
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className="fixed bottom-5 right-5 z-[70] h-11 w-11 rounded-full bg-stone-800 text-white shadow-lg hover:bg-stone-700 flex items-center justify-center"
+      aria-label="Voltar ao topo"
+    >
+      <ChevronUp size={20} />
+    </button>
+  );
+};
+
 export default function App() {
   const RouterComponent =
     typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')
@@ -233,6 +257,7 @@ export default function App() {
             </Routes>
           </main>
           <Footer />
+          <BackToTopButton />
         </div>
       </RouterComponent>
     </ErrorBoundary>
